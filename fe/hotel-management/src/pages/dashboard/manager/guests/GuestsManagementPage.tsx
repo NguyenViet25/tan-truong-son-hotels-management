@@ -114,7 +114,7 @@ const GuestsManagementPage: React.FC = () => {
       //   },
       // },
     ],
-    []
+    [],
   );
 
   const fetchItems = async (p = 1) => {
@@ -124,8 +124,6 @@ const GuestsManagementPage: React.FC = () => {
         page: p,
         pageSize,
         name: searchText || undefined,
-        phone: searchText || undefined,
-        email: searchText || undefined,
         fromDate: fromDate
           ? fromDate.startOf("day").format("YYYY-MM-DDTHH:mm:ss")
           : undefined,
