@@ -75,6 +75,27 @@ public class InvoicesControllerTests
         if (orderExists) Assert.IsType<OkObjectResult>(result.Result); else Assert.IsType<BadRequestObjectResult>(result.Result);
     }
 
+    [Fact]
+    public async Task CreateWalkInInvoice_ReturnsOk_WithAdditionalValue()
+    {
+        var inv = new Mock<IInvoiceService>();
+        inv.Setup(i => i.CreateInvoiceAsync(It.IsAny<CreateInvoiceDto>(), It.IsAny<Guid>()))
+            .ReturnsAsync(new InvoiceDto { Id = Guid.NewGuid() });
+        var ord = new Mock<IOrdersService>();
+        var orderDto = new OrderDetailsDto
+        {
+            Id = Guid.NewGuid(),
+            HotelId = Guid.NewGuid(),
+            IsWalkIn = true,
+            Items = new List<OrderItemDto> { new OrderItemDto { Id = Guid.NewGuid(), MenuItemName = "Item", Quantity = 2, UnitPrice = 100 } }
+        };
+        ord.Setup(o => o.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(ApiResponse<OrderDetailsDto>.Ok(orderDto));
+        var book = new Mock<IBookingsService>();
+        var controller = CreateController(inv, ord, book);
+        var result = await controller.CreateWalkInInvoice(new CreateWalkInInvoiceRequest { OrderId = orderDto.Id, AdditionalValue = 50 });
+        Assert.IsType<OkObjectResult>(result.Result);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -209,5 +230,174 @@ public class InvoicesControllerTests
 
         var result = await controller.CreateWalkInInvoice(new CreateWalkInInvoiceRequest { OrderId = orderDto.Id, DiscountCode = code });
         Assert.IsType<OkObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateWalkInInvoice_ReturnsOk_WhenFoodScopePromotionUpperCase()
+    {
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<HotelManagement.Tests.Utils.EfTestContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        using var ctx = new HotelManagement.Tests.Utils.EfTestContext(options);
+
+        var hotelId = Guid.NewGuid();
+        var code = "CODE20";
+        ctx.Promotions.Add(new HotelManagement.Domain.Promotion
+        {
+            Id = Guid.NewGuid(),
+            HotelId = hotelId,
+            Code = code,
+            Description = "Khuyến mãi ăn uống",
+            Scope = "FOOD",
+            Value = 20,
+            IsActive = true,
+            StartDate = DateTime.Now.AddDays(-1),
+            EndDate = DateTime.Now.AddDays(1)
+        });
+        ctx.SaveChanges();
+
+        var promoRepo = new Mock<HotelManagement.Repository.Common.IRepository<HotelManagement.Domain.Promotion>>();
+        promoRepo.Setup(r => r.Query()).Returns(ctx.Promotions.AsQueryable());
+
+        var invRepo = new Mock<HotelManagement.Repository.Common.IRepository<HotelManagement.Domain.Invoice>>();
+        var uow = new Mock<HotelManagement.Domain.Repositories.IUnitOfWork>();
+
+        var inv = new Mock<IInvoiceService>();
+        inv.Setup(i => i.CreateInvoiceAsync(It.IsAny<CreateInvoiceDto>(), It.IsAny<Guid>()))
+            .ReturnsAsync(new InvoiceDto { Id = Guid.NewGuid() });
+
+        var ord = new Mock<IOrdersService>();
+        var orderDto = new OrderDetailsDto
+        {
+            Id = Guid.NewGuid(),
+            HotelId = hotelId,
+            IsWalkIn = true,
+            Items = new List<OrderItemDto> { new OrderItemDto { Id = Guid.NewGuid(), MenuItemName = "Item", Quantity = 2, UnitPrice = 100 } }
+        };
+        ord.Setup(o => o.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(ApiResponse<OrderDetailsDto>.Ok(orderDto));
+
+        var book = new Mock<IBookingsService>();
+        var controller = new InvoicesController(inv.Object, ord.Object, book.Object, promoRepo.Object, invRepo.Object, uow.Object);
+
+        var result = await controller.CreateWalkInInvoice(new CreateWalkInInvoiceRequest { OrderId = orderDto.Id, DiscountCode = code });
+        Assert.IsType<OkObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateWalkInInvoice_ReturnsOk_WhenPromotionInactive()
+    {
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<HotelManagement.Tests.Utils.EfTestContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        using var ctx = new HotelManagement.Tests.Utils.EfTestContext(options);
+
+        var hotelId = Guid.NewGuid();
+        var code = "CODE30";
+        ctx.Promotions.Add(new HotelManagement.Domain.Promotion
+        {
+            Id = Guid.NewGuid(),
+            HotelId = hotelId,
+            Code = code,
+            Description = "Inactive",
+            Scope = "food",
+            Value = 10,
+            IsActive = false,
+            StartDate = DateTime.Now.AddDays(-1),
+            EndDate = DateTime.Now.AddDays(1)
+        });
+        ctx.SaveChanges();
+
+        var promoRepo = new Mock<HotelManagement.Repository.Common.IRepository<HotelManagement.Domain.Promotion>>();
+        promoRepo.Setup(r => r.Query()).Returns(ctx.Promotions.AsQueryable());
+
+        var invRepo = new Mock<HotelManagement.Repository.Common.IRepository<HotelManagement.Domain.Invoice>>();
+        var uow = new Mock<HotelManagement.Domain.Repositories.IUnitOfWork>();
+
+        var inv = new Mock<IInvoiceService>();
+        inv.Setup(i => i.CreateInvoiceAsync(It.IsAny<CreateInvoiceDto>(), It.IsAny<Guid>()))
+            .ReturnsAsync(new InvoiceDto { Id = Guid.NewGuid() });
+
+        var ord = new Mock<IOrdersService>();
+        var orderDto = new OrderDetailsDto
+        {
+            Id = Guid.NewGuid(),
+            HotelId = hotelId,
+            IsWalkIn = true,
+            Items = new List<OrderItemDto> { new OrderItemDto { Id = Guid.NewGuid(), MenuItemName = "Item", Quantity = 2, UnitPrice = 100 } }
+        };
+        ord.Setup(o => o.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(ApiResponse<OrderDetailsDto>.Ok(orderDto));
+
+        var book = new Mock<IBookingsService>();
+        var controller = new InvoicesController(inv.Object, ord.Object, book.Object, promoRepo.Object, invRepo.Object, uow.Object);
+
+        var result = await controller.CreateWalkInInvoice(new CreateWalkInInvoiceRequest { OrderId = orderDto.Id, DiscountCode = code });
+        Assert.IsType<OkObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateWalkInInvoice_ReturnsOk_WhenPromotionOutOfDate()
+    {
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<HotelManagement.Tests.Utils.EfTestContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        using var ctx = new HotelManagement.Tests.Utils.EfTestContext(options);
+
+        var hotelId = Guid.NewGuid();
+        var code = "CODE40";
+        ctx.Promotions.Add(new HotelManagement.Domain.Promotion
+        {
+            Id = Guid.NewGuid(),
+            HotelId = hotelId,
+            Code = code,
+            Description = "Expired",
+            Scope = "food",
+            Value = 10,
+            IsActive = true,
+            StartDate = DateTime.Now.AddDays(-10),
+            EndDate = DateTime.Now.AddDays(-5)
+        });
+        ctx.SaveChanges();
+
+        var promoRepo = new Mock<HotelManagement.Repository.Common.IRepository<HotelManagement.Domain.Promotion>>();
+        promoRepo.Setup(r => r.Query()).Returns(ctx.Promotions.AsQueryable());
+
+        var invRepo = new Mock<HotelManagement.Repository.Common.IRepository<HotelManagement.Domain.Invoice>>();
+        var uow = new Mock<HotelManagement.Domain.Repositories.IUnitOfWork>();
+
+        var inv = new Mock<IInvoiceService>();
+        inv.Setup(i => i.CreateInvoiceAsync(It.IsAny<CreateInvoiceDto>(), It.IsAny<Guid>()))
+            .ReturnsAsync(new InvoiceDto { Id = Guid.NewGuid() });
+
+        var ord = new Mock<IOrdersService>();
+        var orderDto = new OrderDetailsDto
+        {
+            Id = Guid.NewGuid(),
+            HotelId = hotelId,
+            IsWalkIn = true,
+            Items = new List<OrderItemDto> { new OrderItemDto { Id = Guid.NewGuid(), MenuItemName = "Item", Quantity = 2, UnitPrice = 100 } }
+        };
+        ord.Setup(o => o.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(ApiResponse<OrderDetailsDto>.Ok(orderDto));
+
+        var book = new Mock<IBookingsService>();
+        var controller = new InvoicesController(inv.Object, ord.Object, book.Object, promoRepo.Object, invRepo.Object, uow.Object);
+
+        var result = await controller.CreateWalkInInvoice(new CreateWalkInInvoiceRequest { OrderId = orderDto.Id, DiscountCode = code });
+        Assert.IsType<OkObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateBookingInvoice_ReturnsBad_WhenCheckoutFail()
+    {
+        var inv = new Mock<IInvoiceService>();
+        var ord = new Mock<IOrdersService>();
+        var book = new Mock<IBookingsService>();
+        book.Setup(b => b.CheckOutAsync(It.IsAny<Guid>(), It.IsAny<HotelManagement.Services.Admin.Bookings.Dtos.CheckoutRequestDto>()))
+            .ReturnsAsync(ApiResponse<HotelManagement.Services.Admin.Bookings.Dtos.CheckoutResultDto>.Fail("fail"));
+        var promoRepo = new Mock<HotelManagement.Repository.Common.IRepository<HotelManagement.Domain.Promotion>>();
+        var invRepo = new Mock<HotelManagement.Repository.Common.IRepository<HotelManagement.Domain.Invoice>>();
+        var uow = new Mock<HotelManagement.Domain.Repositories.IUnitOfWork>();
+        var controller = new InvoicesController(inv.Object, ord.Object, book.Object, promoRepo.Object, invRepo.Object, uow.Object);
+        var result = await controller.CreateBookingInvoice(new CreateBookingInvoiceRequest { BookingId = Guid.NewGuid() });
+        Assert.IsType<BadRequestObjectResult>(result.Result);
     }
 }

@@ -27,7 +27,6 @@ public class RoomsController : ControllerBase
         return Ok(result);
     }
 
-
     [HttpGet("by-type/{id}")]
     public async Task<ActionResult<ApiResponse<List<RoomSummaryDto>>>> ListRoomByType([FromRoute] Guid id)
     {
@@ -39,7 +38,8 @@ public class RoomsController : ControllerBase
     public async Task<ActionResult<ApiResponse<RoomSummaryDto>>> Get(Guid id)
     {
         var result = await _roomsService.GetByIdAsync(id);
-        return Ok(result);
+        if (result.IsSuccess) return Ok(result);
+        return NotFound(result);
     }
 
     // UC-24: Create room with assigned type, floor, number
@@ -47,7 +47,8 @@ public class RoomsController : ControllerBase
     public async Task<ActionResult<ApiResponse<RoomSummaryDto>>> Create([FromBody] CreateRoomDto dto)
     {
         var result = await _roomsService.CreateAsync(dto);
-        return Ok(result);
+        if (result.IsSuccess) return Ok(result);
+        return BadRequest(result);
     }
 
     // UC-25: Edit room information and operational status
@@ -55,7 +56,8 @@ public class RoomsController : ControllerBase
     public async Task<ActionResult<ApiResponse<RoomSummaryDto>>> Update(Guid id, [FromBody] UpdateRoomDto dto)
     {
         var result = await _roomsService.UpdateAsync(id, dto);
-        return Ok(result);
+        if (result.IsSuccess) return Ok(result);
+        return BadRequest(result);
     }
 
     // UC-26: Delete room without booking history
@@ -63,7 +65,8 @@ public class RoomsController : ControllerBase
     public async Task<ActionResult<ApiResponse>> Delete(Guid id)
     {
         var result = await _roomsService.DeleteAsync(id);
-        return Ok(result);
+        if (result.IsSuccess) return Ok(result);
+        return BadRequest(result);
     }
 
     // UC-27: Mark room temporarily out of service
@@ -71,7 +74,8 @@ public class RoomsController : ControllerBase
     public async Task<ActionResult<ApiResponse<RoomSummaryDto>>> SetOutOfService(Guid id, [FromBody] SetOutOfServiceDto dto)
     {
         var result = await _roomsService.SetOutOfServiceAsync(id, dto);
-        return Ok(result);
+        if (result.IsSuccess) return Ok(result);
+        return BadRequest(result);
     }
 
 }

@@ -1,4 +1,5 @@
 using HotelManagement.Api.Controllers;
+using HotelManagement.Services.Admin.Bookings;
 using HotelManagement.Services.Auth;
 using HotelManagement.Services.Auth.Dtos;
 using HotelManagement.Services.Common;
@@ -12,13 +13,15 @@ public class AuthControllerTests
 {
     private static AuthController CreateController(Mock<IAuthService> mock)
     {
-        return new AuthController(mock.Object);
+        var bs = new Mock<IBookingsService>();
+        return new AuthController(mock.Object, bs.Object);
     }
 
     [Fact]
     public async Task Login_ReturnsTwoFactor_WhenRequired()
     {
         var mock = new Mock<IAuthService>();
+        var bs = new Mock<IBookingsService>();
         mock.Setup(a => a.LoginAsync(It.IsAny<LoginRequestDto>()))
             .ReturnsAsync(new LoginResponseDto(true, null, null, null));
         var controller = CreateController(mock);

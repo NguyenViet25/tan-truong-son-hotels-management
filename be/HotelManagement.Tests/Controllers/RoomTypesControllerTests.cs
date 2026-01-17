@@ -55,7 +55,7 @@ public class RoomTypesControllerTests
     {
         var mock = new Mock<IRoomTypeService>();
         var resp = success ? ApiResponse<RoomTypeDto>.Ok(new RoomTypeDto()) : ApiResponse<RoomTypeDto>.Fail("fail");
-        mock.Setup(s => s.UpdateAsync(It.IsAny<Guid>(), It.IsAny<UpdateRoomTypeDto>())).ReturnsAsync(resp);
+        mock.Setup(s => s.UpdateAsync(It.IsAny<Guid>(), It.IsAny<UpdateRoomTypeDto>(), It.IsAny<Guid?>(), It.IsAny<string?>())).ReturnsAsync(resp);
         var controller = CreateController(mock);
         var result = await controller.UpdateRoomType(Guid.NewGuid(), new UpdateRoomTypeDto());
         if (success) Assert.IsType<OkObjectResult>(result); else Assert.IsType<BadRequestObjectResult>(result);

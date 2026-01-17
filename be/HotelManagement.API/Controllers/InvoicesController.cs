@@ -94,6 +94,18 @@ public class InvoicesController : ControllerBase
         }
         var order = orderRes.Data;
 
+        if (!string.IsNullOrWhiteSpace(request.DiscountCode))
+        {
+            var now = DateTime.Now;
+            var promo = await _promotionRepository.Query()
+                .Where(p => p.HotelId == order.HotelId && p.Code == request.DiscountCode && p.IsActive && p.StartDate <= now && p.EndDate >= now)
+                .FirstOrDefaultAsync();
+            if (promo != null && (promo.Scope ?? "").Trim().ToLower() == "booking")
+            {
+                return BadRequest(ApiResponse<InvoiceDto>.Fail("Invalid promotion for walk-in"));
+            }
+        }
+
         var lines = new List<CreateInvoiceLineDto>
         {
             new ()
@@ -124,22 +136,10 @@ public class InvoicesController : ControllerBase
         if (createDto.OrderId.HasValue)
         {
             await _invoiceService.RemoveLastOrderInvoiceAsync((Guid)createDto.OrderId);
-            var invoice = await _invoiceService.CreateInvoiceAsync(createDto, userId);
+            var createdDto = await _invoiceService.CreateInvoiceAsync(createDto, userId);
+            return Ok(ApiResponse<InvoiceDto>.Ok(createdDto, "Created"));
         }
-
-        var inv = await _invoiceRepository.Query()
-            .Where(i => i.OrderId == request.OrderId)
-            .OrderByDescending(i => i.CreatedAt)
-            .FirstOrDefaultAsync();
-
-
-        if (inv != null)
-        {
-            var dto = await _invoiceService.GetInvoiceAsync(inv.Id);
-            return Ok(ApiResponse<InvoiceDto>.Ok(dto, "Created"));
-        }
-
-        return Ok();
+        return BadRequest(ApiResponse<InvoiceDto>.Fail("Invalid order"));
 
     }
 
@@ -175,10 +175,10 @@ public class InvoicesController : ControllerBase
 
         }
 
-        var inv = await _invoiceRepository.Query()
+        var inv = _invoiceRepository.Query()
              .Where(i => i.BookingId == request.BookingId)
              .OrderByDescending(i => i.CreatedAt)
-             .FirstOrDefaultAsync();
+             .FirstOrDefault();
 
 
         if (inv != null)
@@ -187,7 +187,7 @@ public class InvoicesController : ControllerBase
             return Ok(ApiResponse<InvoiceDto>.Ok(dto, "Created"));
         }
 
-        return Ok();
+        return NotFound(ApiResponse<InvoiceDto>.Fail("not found"));
     }
 
 }

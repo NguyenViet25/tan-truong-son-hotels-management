@@ -35,13 +35,7 @@ public class UsersAdminController : ControllerBase
     [HttpGet("by-role")]
     public async Task<ActionResult<ApiResponse<IEnumerable<UserSummaryDto>>>> ListHouseKeppers([FromQuery] UserByRoleQuery query)
     {
-        var hotelIdClaim = User.FindFirst("hotelId")?.Value;
-
-        if (hotelIdClaim == null)
-            return BadRequest("HotelId not found in user claims");
-
-        Guid hotelId = Guid.Parse(hotelIdClaim);
-        var items = await _svc.ListByRoleAsync(query, hotelId);
+        var items = await _svc.ListByRoleAsync(query, query.HotelId);
         return Ok(ApiResponse<IEnumerable<UserSummaryDto>>.Ok(items));
     }
 
@@ -121,6 +115,7 @@ public class UsersAdminController : ControllerBase
     public async Task<ActionResult<ApiResponse>> ResetPassword(Guid id, [FromBody] ResetPasswordAdminDto request)
     {
         var ok = await _svc.ResetPasswordAsync(id, request);
+        if (!ok) return NotFound(ApiResponse.Fail("User not found"));
         return Ok(ApiResponse.Ok("Password reset successful"));
     }
 
