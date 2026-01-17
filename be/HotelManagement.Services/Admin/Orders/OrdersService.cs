@@ -122,13 +122,10 @@ public class OrdersService : IOrdersService
         {
             var q = _orderRepository.Query()
                 .Include(o => o.Items)
-                .Where(x => x.DiningSessionId == null);
+                .Where(x => true);
 
             if (query.HotelId.HasValue)
                 q = q.Where(o => o.HotelId == query.HotelId.Value);
-
-            //if (query.Status.HasValue)
-            //    q = q.Where(o => o.Status == query.Status.Value);
 
             if (query.BookingId.HasValue)
                 q = q.Where(o => o.BookingId == query.BookingId.Value);

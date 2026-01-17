@@ -27,7 +27,7 @@ type Props = {
       days: number;
       hours: number;
       minutes: number;
-    }
+    },
   ) => void;
 };
 
@@ -104,7 +104,7 @@ export default function CheckInTimeDialog({
               </Typography>
               <Chip
                 label={(displayScheduledEnd || dayjs(scheduledEnd)).format(
-                  "DD/MM/YYYY HH:mm"
+                  "DD/MM/YYYY HH:mm",
                 )}
               />
             </Stack>
@@ -120,7 +120,11 @@ export default function CheckInTimeDialog({
               .millisecond(0)}
             slotProps={{
               textField: {
-                inputProps: { readOnly: true },
+                readOnly: true,
+                inputProps: {
+                  readOnly: true,
+                },
+                fullWidth: true,
               },
             }}
             onChange={(v) => v && setValue(v)}
@@ -132,8 +136,8 @@ export default function CheckInTimeDialog({
                 isEarly
                   ? `Sớm ${days}d ${hours}h ${minutes}m`
                   : isLate
-                  ? `Muộn ${days}d ${hours}h ${minutes}m`
-                  : `Đúng giờ`
+                    ? `Muộn ${days}d ${hours}h ${minutes}m`
+                    : `Đúng giờ`
               }
             />
           </Stack>
@@ -148,6 +152,7 @@ export default function CheckInTimeDialog({
         <Button onClick={onClose}>Hủy</Button>
         <Button
           variant="contained"
+          // disabled={isEarly}
           onClick={() =>
             onConfirm(value.format("YYYY-MM-DDTHH:mm:ss"), {
               isEarly,

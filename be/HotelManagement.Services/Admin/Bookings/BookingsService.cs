@@ -643,6 +643,7 @@ public class BookingsService(
             }
 
 
+            var isDateChanged = booking.StartDate != dto.StartDate || booking.EndDate != dto.EndDate;
 
             var existingBrtList = await _bookingRoomTypeRepo.Query()
                 .Where(x => x.BookingId == booking.Id)
@@ -680,8 +681,8 @@ public class BookingsService(
                             RoomTypeName = roomType.Name,
                             Capacity = roomType.Capacity,
                             Price = rtDto.Price ?? roomType.BasePriceFrom,
-                            StartDate = rtDto.StartDate,
-                            EndDate = rtDto.EndDate,
+                            StartDate = isDateChanged ? dto.StartDate!.Value : rtDto.StartDate,
+                            EndDate = isDateChanged ? dto.EndDate!.Value : rtDto.EndDate,
                             TotalRoom = rtDto.TotalRoom ?? 0
                         };
                         await _bookingRoomTypeRepo.AddAsync(brt);
@@ -690,8 +691,8 @@ public class BookingsService(
                     }
                     else
                     {
-                        brt.StartDate = rtDto.StartDate;
-                        brt.EndDate = rtDto.EndDate;
+                        brt.StartDate = isDateChanged ? dto.StartDate!.Value : rtDto.StartDate;
+                        brt.EndDate = isDateChanged ? dto.EndDate!.Value : rtDto.EndDate;
                         if (rtDto.Price.HasValue) brt.Price = rtDto.Price.Value;
                         await _bookingRoomTypeRepo.UpdateAsync(brt);
                         await _bookingRoomTypeRepo.SaveChangesAsync();
@@ -758,6 +759,7 @@ public class BookingsService(
                 }
             }
 
+
             booking.StartDate = dto.StartDate;
             booking.EndDate = dto.EndDate;
             booking.TotalAmount = dto.Total;
@@ -776,8 +778,23 @@ public class BookingsService(
                 await _guestRepo.SaveChangesAsync();
             }
 
+
             await _bookingRepo.UpdateAsync(booking);
             await _bookingRepo.SaveChangesAsync();
+
+
+            var bookingRoomTypeIds = await _bookingRoomTypeRepo.Query().Where(x => x.BookingId == booking.Id).Select(x => x.RoomTypeId).ToListAsync();
+            var bookingRoom = await _bookingRoomRepo.Query().Where(x => bookingRoomTypeIds.Contains(x.BookingRoomTypeId)).ToListAsync();
+
+            foreach (var room in bookingRoom)
+            {
+                room.StartDate = booking.StartDate!.Value;
+                room.EndDate = booking.EndDate!.Value;
+                room.ExtendedDate = isDateChanged ? null : room.ExtendedDate;
+
+                await _bookingRoomRepo.UpdateAsync(room);
+                await _bookingRoomRepo.SaveChangesAsync();
+            }
 
             await _uow.CommitTransactionAsync();
             return await GetByIdAsync(booking.Id);
@@ -1854,16 +1871,16 @@ public class BookingsService(
 
             var rules = await _surchargeRuleRepo.Query().Where(x => x.HotelId == booking.HotelId).ToListAsync();
 
-            if (booking.DepositAmount > 0)
-            {
-                lines.Add(new InvoiceLine
-                {
-                    Id = Guid.NewGuid(),
-                    Description = "Deposit deduction",
-                    Amount = -booking.DepositAmount,
-                    SourceType = InvoiceLineSourceType.Discount
-                });
-            }
+            //if (booking.DepositAmount > 0)
+            //{
+            //    lines.Add(new InvoiceLine
+            //    {
+            //        Id = Guid.NewGuid(),
+            //        Description = "Deposit deduction",
+            //        Amount = -booking.DepositAmount,
+            //        SourceType = InvoiceLineSourceType.Discount
+            //    });
+            //}
 
             if (!string.IsNullOrWhiteSpace(dto.DiscountCode))
             {
@@ -1950,7 +1967,7 @@ public class BookingsService(
             invoice.SubTotal = invoice.Lines.Where(x => x.Amount > 0).Sum(x => x.Amount);
             invoice.DiscountAmount = Math.Abs(invoice.Lines.Where(x => x.Amount < 0).Sum(x => x.Amount));
             invoice.TaxAmount = Math.Round(invoice.SubTotal * 0.1m, 2);
-            invoice.TotalAmount = dto.TotalAmount ?? 0;
+            invoice.TotalAmount = booking.TotalAmount;
 
             await _invoiceRepo.AddAsync(invoice);
             await _invoiceRepo.SaveChangesAsync();

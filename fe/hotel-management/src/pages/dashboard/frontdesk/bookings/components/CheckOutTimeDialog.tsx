@@ -28,7 +28,7 @@ type Props = {
       days: number;
       hours: number;
       minutes: number;
-    }
+    },
   ) => void;
   reload?: number;
 };
@@ -88,8 +88,9 @@ export default function CheckOutTimeDialog({
     const target = now.isAfter(todayAt) ? todayAt.add(1, "day") : todayAt;
     return target;
   }, [defaultCheckOutTime]);
+
   useEffect(() => {
-    if (open) setValue(defaultCheckoutByCurrent ?? dayjs());
+    if (open) setValue(dayjs());
   }, [open, defaultCheckoutByCurrent]);
 
   const { isEarly, isLate, days, hours, minutes } = useMemo(() => {
@@ -117,7 +118,7 @@ export default function CheckOutTimeDialog({
               </Typography>
               <Chip
                 label={(displayScheduledStart || dayjs(scheduledStart)).format(
-                  "DD/MM/YYYY HH:mm"
+                  "DD/MM/YYYY HH:mm",
                 )}
               />
             </Stack>
@@ -147,8 +148,8 @@ export default function CheckOutTimeDialog({
                 isLate
                   ? `Muộn ${days}d ${hours}h ${minutes}m`
                   : isEarly
-                  ? `Sớm ${days}d ${hours}h ${minutes}m`
-                  : `Đúng giờ`
+                    ? `Sớm ${days}d ${hours}h ${minutes}m`
+                    : `Đúng giờ`
               }
             />
           </Stack>

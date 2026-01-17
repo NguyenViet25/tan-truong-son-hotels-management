@@ -362,6 +362,16 @@ public class DiningSessionService : IDiningSessionService
         {
             return ApiResponse<bool>.Fail("Session not found or not open");
         }
+
+        var oldOrder = await _orderRepository.Query().Where(x => x.DiningSessionId == sessionId).FirstOrDefaultAsync();
+        if(oldOrder != null)
+        {
+            oldOrder.DiningSessionId = null;
+            await _orderRepository.UpdateAsync(oldOrder);
+            await _orderRepository.SaveChangesAsync();
+        }
+
+
         var order = await _orderRepository.FindAsync(orderId);
         if (order == null)
         {

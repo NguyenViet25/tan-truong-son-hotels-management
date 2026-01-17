@@ -61,10 +61,10 @@ const MenuManagementPage: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItemDto | undefined>(
-    undefined
+    undefined,
   );
   const [deleteTarget, setDeleteTarget] = useState<MenuItemDto | undefined>(
-    undefined
+    undefined,
   );
 
   // Notifications
@@ -231,16 +231,16 @@ const MenuManagementPage: React.FC = () => {
 
   const foodItems: MenuItemDto[] = React.useMemo(
     () => items.filter((it) => (it.category || "").trim() !== "Set"),
-    [items]
+    [items],
   );
   const setRecords: MenuItemDto[] = React.useMemo(
     () => items.filter((it) => (it.category || "").trim() === "Set"),
-    [items]
+    [items],
   );
   const sortedSetRecords: MenuItemDto[] = React.useMemo(
     () =>
       [...setRecords].sort((a, b) => Number(a.unitPrice) - Number(b.unitPrice)),
-    [setRecords]
+    [setRecords],
   );
   const setGroupsByPrice: Array<[number, MenuItemDto[]]> = React.useMemo(() => {
     const map = new Map<number, MenuItemDto[]>();
@@ -258,9 +258,9 @@ const MenuManagementPage: React.FC = () => {
         (it) =>
           !categoryFilter.trim() ||
           (it.category || "").toUpperCase() ===
-            categoryFilter.trim().toUpperCase()
+            categoryFilter.trim().toUpperCase(),
       ),
-    [foodItems, categoryFilter]
+    [foodItems, categoryFilter],
   );
 
   return (
@@ -550,7 +550,7 @@ const MenuManagementPage: React.FC = () => {
                                   sx={{ fontWeight: 800 }}
                                 >
                                   {`Giá/người: ${Number(
-                                    price
+                                    price,
                                   ).toLocaleString()} ₫`}
                                 </Typography>
                               </Stack>
@@ -679,7 +679,7 @@ const MenuManagementPage: React.FC = () => {
                               </Stack>
                               <Chip
                                 label={`Giá/người: ${Number(
-                                  it.unitPrice
+                                  it.unitPrice,
                                 ).toLocaleString()} ₫`}
                                 color="warning"
                                 sx={{
@@ -751,7 +751,7 @@ const MenuManagementPage: React.FC = () => {
 };
 
 export default MenuManagementPage;
-const FOOD_CATEGORY_VALUES: string[] = [
+export const FOOD_CATEGORY_VALUES: string[] = [
   "NGAO",
   "HÀU",
   "SÒ LÔNG",
@@ -783,7 +783,7 @@ const FOOD_CATEGORY_VALUES: string[] = [
   "CÁ SỦ",
 ];
 
-const capitalizeWords = (s: string) =>
+export const capitalizeWords = (s: string) =>
   s
     .toLowerCase()
     .split(" ")

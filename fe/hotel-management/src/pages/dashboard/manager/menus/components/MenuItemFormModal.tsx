@@ -17,6 +17,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormHelperText,
   InputAdornment,
   InputLabel,
   MenuItem,
@@ -34,6 +35,7 @@ import type {
   UpdateMenuItemRequest,
 } from "../../../../../api/menusApi";
 import { useStore, type StoreState } from "../../../../../hooks/useStore";
+import { capitalizeWords, FOOD_CATEGORY_VALUES } from "../MenuManagementPage";
 
 type FormValues = {
   category: string;
@@ -61,7 +63,7 @@ export interface MenuItemFormModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (
-    payload: CreateMenuItemRequest | UpdateMenuItemRequest
+    payload: CreateMenuItemRequest | UpdateMenuItemRequest,
   ) => Promise<void> | void;
   initialValues?: MenuItemDto;
   mode?: "create" | "edit";
@@ -88,7 +90,7 @@ const MenuItemFormModal: React.FC<MenuItemFormModalProps> = ({
     resolver: zodResolver(
       z
         .object({
-          category: z.string().optional(),
+          category: z.string("Chọn nhóm món").min(1, "Vui lòng chọn nhóm món"),
           name: z.string().min(1, "Tên là bắt buộc").max(100),
           unitPrice: z.number("Giá phải là số").optional(),
           imageUrl: z.string().optional().or(z.literal("")),
@@ -119,15 +121,15 @@ const MenuItemFormModal: React.FC<MenuItemFormModalProps> = ({
               });
             }
           }
-        })
+        }),
     ),
     defaultValues: {
       category:
         createType === "set"
-          ? initialValues?.category ?? "Set"
-          : initialValues?.category ?? "Món khai vị",
+          ? (initialValues?.category ?? "Set")
+          : (initialValues?.category ?? ""),
       name: initialValues?.name ?? "",
-      unitPrice: createType === "set" ? 1 : initialValues?.unitPrice ?? 0,
+      unitPrice: createType === "set" ? 1 : (initialValues?.unitPrice ?? 0),
       imageUrl: initialValues?.imageUrl ?? "",
       status: initialValues?.status ?? 0,
       isActive: initialValues?.isActive ?? true,
@@ -220,8 +222,8 @@ const MenuItemFormModal: React.FC<MenuItemFormModalProps> = ({
             ? "Thêm set mới"
             : "Thêm món mới"
           : isSetMode
-          ? "Chỉnh sửa set"
-          : "Chỉnh sửa món"}
+            ? "Chỉnh sửa set"
+            : "Chỉnh sửa món"}
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
@@ -233,25 +235,32 @@ const MenuItemFormModal: React.FC<MenuItemFormModalProps> = ({
                 control={control}
                 name="category"
                 render={({ field }) => (
-                  <Select
-                    labelId="menuGroup-label"
-                    label="Nhóm món"
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    error={!!errors.category}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <GroupIcon />
-                      </InputAdornment>
-                    }
-                  >
-                    {foodGroups.map((g) => (
-                      <MenuItem key={g.id} value={g.id}>
-                        {g.name}
-                      </MenuItem>
-                    ))}
-                    <MenuItem value="Set">Set</MenuItem>
-                  </Select>
+                  <>
+                    <Select
+                      labelId="menuGroup-label"
+                      label="Nhóm món"
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      error={!!errors.category}
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <GroupIcon />
+                        </InputAdornment>
+                      }
+                    >
+                      {FOOD_CATEGORY_VALUES.map((g) => (
+                        <MenuItem key={g} value={capitalizeWords(g)}>
+                          {capitalizeWords(g)}
+                        </MenuItem>
+                      ))}
+                      <MenuItem value="Set">Set</MenuItem>
+                    </Select>
+                    {errors.category?.message && (
+                      <FormHelperText error>
+                        {errors.category?.message}
+                      </FormHelperText>
+                    )}
+                  </>
                 )}
               />
             </FormControl>
@@ -300,7 +309,7 @@ const MenuItemFormModal: React.FC<MenuItemFormModalProps> = ({
                   value={
                     field.value !== undefined && field.value !== null
                       ? new Intl.NumberFormat("vi-VN").format(
-                          Number(field.value)
+                          Number(field.value),
                         )
                       : ""
                   }
